@@ -1,0 +1,72 @@
+<!-- templates/contact.html -->
+{% extends "base.html" %}
+
+{% block title %}Contact – The Agents{% endblock %}
+
+{% block content %}
+<!-- Hero Image Section -->
+<section class="hero-image">
+    <img src="{{ url_for('static', filename='images/placeholder.png') }}" alt="The Agents - Confidential Contact" loading="lazy">
+    <div class="hero-overlay"></div>
+    <div class="container hero-content">
+        <h1>Contact</h1>
+        <p>Initiate a discreet consultation for vehicle viewings, protection services, or bespoke lifestyle requests.</p>
+    </div>
+</section>
+
+<section class="contact-section">
+    <div class="container">
+        <div class="contact-info">
+            <h3>Confidential Protocol</h3>
+            <p>All inquiries are handled with the highest level of discretion, in alignment with our clients’ expectations of privacy and exclusivity.</p>
+            
+            <div class="contact-detail">
+                <p><strong>Concierge Line</strong><br>
+                <a href="mailto:concierge@theagents.za">concierge@theagents.za</a></p>
+            </div>
+
+            <div class="contact-detail">
+                <p><strong>Operational Base</strong><br>
+                229A Bram Fischer Drive<br>
+                Kensington B, Randburg, 2194<br>
+                <em>By private appointment only</em></p>
+            </div>
+
+            <!-- Embedded Google Map -->
+            <div class="map-container">
+                <iframe 
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3584.398135808167!2d28.0208875!3d-26.1320344!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1e950b5f3b9c0a8d%3A0x2b68e9f6f0e1c2e3!2s229A%20Bram%20Fischer%20Dr%2C%20Kensington%20B%2C%20Randburg%2C%202194!5e0!3m2!1sen!2sza!4v1704550000000!5m2!1sen!2sza" 
+                    width="100%" 
+                    height="280" 
+                    style="border:0; border-radius: 6px;" 
+                    allowfullscreen="" 
+                    loading="lazy"
+                    referrerpolicy="no-referrer-when-downgrade">
+                </iframe>
+            </div>
+        </div>
+
+        <form class="contact-form" action="#" method="POST">
+            <input type="text" name="name" placeholder="Full Name" required>
+            <input type="email" name="email" placeholder="Email Address" required>
+            <select name="inquiry" required>
+                <option value="" disabled selected>Inquiry Type</option>
+                <option value="exotic">Exotic Vehicle Viewing</option>
+                <option value="chauffeur">VIP Chauffeur Service</option>
+                <option value="protection">Executive Protection</option>
+                <option value="lifestyle">Lifestyle Management</option>
+                <option value="other">Other Request</option>
+            </select>
+            
+            {% if request.args.get('vehicle') %}
+            <input type="hidden" name="vehicle" value="{{ request.args.get('vehicle') }}">
+            <textarea name="message" placeholder="Your request regarding {{ request.args.get('vehicle')|replace('+', ' ') }}" rows="5" required></textarea>
+            {% else %}
+            <textarea name="message" placeholder="Describe your request with discretion…" rows="5" required></textarea>
+            {% endif %}
+
+            <button type="submit" class="cta-button">Submit Request</button>
+        </form>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,198 @@
+<!-- templates/index.html -->
+{% extends "base.html" %}
+
+{% block title %}Inventory - The Agents{% endblock %}
+
+{% block content %}
+<!-- Hero Image Section -->
+<section class="hero-image">
+    <img src="{{ url_for('static', filename='images/placeholder.png') }}" alt="The Agents Exotic Inventory" loading="lazy">
+    <div class="hero-overlay"></div>
+    <div class="container hero-content">
+        <h1>Exotic Inventory</h1>
+        <p>{{ listings|length }} vehicles curated for the elite.</p>
+    </div>
+</section>
+
+<!-- Sort Dropdown -->
+<div class="container" style="margin-bottom: 1rem;">
+    <div id="sortContainer" style="display: inline-flex; align-items: center; gap: 0.8rem; background: rgba(30,30,30,0.7); padding: 0.6rem 1rem; border-radius: 4px;">
+        <label for="sortSelect" style="color: #aaa; font-size: 0.9rem; font-weight: 500;">
+            Sort:
+        </label>
+        <select 
+            id="sortSelect" 
+            onchange="sortListings()" 
+            style="background: var(--dark); color: white; border: 1px solid #444; padding: 0.4rem 0.8rem; border-radius: 2px; font-family: 'Montserrat', sans-serif;"
+        >
+            <option value="default">Default (Newest First)</option>
+            <option value="price-low">Price - Low to High</option>
+            <option value="price-high">Price - High to Low</option>
+            <option value="recent">Most Recent</option>
+        </select>
+    </div>
+</div>
+
+<!-- Multi-Filter Container -->
+<div class="container" style="margin-bottom: 2rem;">
+    <div id="multiFilterContainer" style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: end; background: rgba(30,30,30,0.7); padding: 1.2rem; border-radius: 6px;">
+        
+        <!-- Search Input -->
+        <div class="filter-group" style="flex: 1; min-width: 250px;">
+            <label for="searchInput" style="color: #aaa; font-size: 0.9rem; display: block; margin-bottom: 0.3rem;">
+                Search:
+            </label>
+            <input 
+                type="text" 
+                id="searchInput" 
+                placeholder="e.g., Audi, A4, Automatic..." 
+                style="width: 100%; padding: 0.5rem; background: var(--dark); border: 1px solid #444; color: white; border-radius: 3px; font-family: 'Montserrat', sans-serif;"
+            >
+        </div>
+
+        <!-- Make Dropdown -->
+        <div class="filter-group" style="flex: 1; min-width: 180px;">
+            <label for="makeSelect" style="color: #aaa; font-size: 0.9rem; display: block; margin-bottom: 0.3rem;">
+                Make:
+            </label>
+            <select 
+                id="makeSelect" 
+                style="width: 100%; padding: 0.5rem; background: var(--dark); border: 1px solid #444; color: white; border-radius: 3px; font-family: 'Montserrat', sans-serif;"
+            >
+                <option value="">Any Make</option>
+                <!-- Populated by JS -->
+            </select>
+        </div>
+
+        <!-- Apply / Reset Buttons -->
+        <div class="filter-group" style="display: flex; gap: 0.6rem; min-width: 180px;">
+            <button 
+                id="applyFiltersBtn" 
+                style="flex: 1; background: var(--gold); color: var(--dark); border: none; padding: 0.5rem; font-weight: 600; border-radius: 3px; cursor: pointer; transition: background 0.2s;"
+                onmouseover="this.style.background='#c19d2e'" 
+                onmouseout="this.style.background='#d4af37'"
+            >
+                Apply
+            </button>
+            <button 
+                id="resetFiltersBtn" 
+                style="flex: 1; background: transparent; color: #aaa; border: 1px solid #444; padding: 0.5rem; font-weight: 500; border-radius: 3px; cursor: pointer;"
+            >
+                Reset
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Vehicle Grid -->
+<div class="container">
+    <div class="vehicle-grid" id="vehicleGrid">
+        {% for car in listings %}
+        <div 
+            class="vehicle-card" 
+            data-id="{{ car.id }}"
+            data-make="{{ car.make|lower }}"
+            data-model="{{ car.model|lower }}"
+            data-variant="{{ car.variant|lower }}"
+            data-body-type="{{ car.body_type|lower }}"
+            data-price="{{ car.price }}"
+            data-timestamp="{{ car.created_timestamp }}"
+            data-searchable="{{ (car.make + ' ' + car.model + ' ' + car.variant + ' ' + car.body_type + ' ' + car.engine + ' ' + car.description)|lower }}"
+        >
+            <img src="{{ car.image_urls[0] }}" alt="{{ car.make }} {{ car.model }}" loading="lazy">
+            <div class="vehicle-info">
+                <h3>{{ car.year }} {{ car.make }} {{ car.model }}</h3>
+                <a href="{{ url_for('contact') }}?vehicle={{ car.make }}+{{ car.model }}+{{ car.year }}" 
+                   class="cta-button">BOOK NOW</a>
+            </div>
+        </div>
+        {% else %}
+        <p style="text-align: center; width: 100%; padding: 2rem;">No vehicles available.</p>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Filtering & Sorting Script -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const vehicleGrid = document.getElementById('vehicleGrid');
+    const cards = Array.from(vehicleGrid.querySelectorAll('.vehicle-card'));
+    
+    // Extract unique makes for dropdown
+    const makes = [...new Set(cards.map(card => card.getAttribute('data-make')))]
+        .filter(make => make && make.trim())
+        .sort();
+    
+    const makeSelect = document.getElementById('makeSelect');
+    makes.forEach(make => {
+        const option = document.createElement('option');
+        option.value = make;
+        option.textContent = make.charAt(0).toUpperCase() + make.slice(1);
+        makeSelect.appendChild(option);
+    });
+
+    let currentFilters = {
+        search: '',
+        make: '',
+    };
+
+    function applyFilters() {
+        const searchInput = document.getElementById('searchInput');
+        const makeSelect = document.getElementById('makeSelect');
+        
+        currentFilters.search = (searchInput.value || '').toLowerCase().trim();
+        currentFilters.make = makeSelect.value || '';
+
+        cards.forEach(card => {
+            const searchable = card.getAttribute('data-searchable') || '';
+            const make = card.getAttribute('data-make') || '';
+            
+            const matchesSearch = currentFilters.search === '' || searchable.includes(currentFilters.search);
+            const matchesMake = currentFilters.make === '' || make === currentFilters.make;
+
+            card.style.display = (matchesSearch && matchesMake) ? '' : 'none';
+        });
+
+        sortListings();
+    }
+
+    function resetFilters() {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('makeSelect').value = '';
+        currentFilters = { search: '', make: '' };
+        applyFilters();
+    }
+
+    function sortListings() {
+        const sortValue = document.getElementById('sortSelect').value;
+        const visibleCards = Array.from(vehicleGrid.querySelectorAll('.vehicle-card:not([style*="none"])'));
+
+        const sortedCards = [...visibleCards].sort((a, b) => {
+            const priceA = parseFloat(a.getAttribute('data-price')) || 0;
+            const priceB = parseFloat(b.getAttribute('data-price')) || 0;
+            const timeA = parseFloat(a.getAttribute('data-timestamp')) || 0;
+            const timeB = parseFloat(b.getAttribute('data-timestamp')) || 0;
+
+            switch (sortValue) {
+                case 'price-low': return priceA - priceB;
+                case 'price-high': return priceB - priceA;
+                case 'recent':
+                case 'default':
+                default: return timeB - timeA;
+            }
+        });
+
+        while (vehicleGrid.firstChild) vehicleGrid.removeChild(vehicleGrid.firstChild);
+        sortedCards.forEach(card => vehicleGrid.appendChild(card));
+    }
+
+    document.getElementById('applyFiltersBtn').addEventListener('click', applyFilters);
+    document.getElementById('resetFiltersBtn').addEventListener('click', resetFilters);
+    document.getElementById('searchInput').addEventListener('keyup', (e) => {
+        if (e.key === 'Enter') applyFilters();
+    });
+
+    applyFilters();
+});
+</script>
+{% endblock %}

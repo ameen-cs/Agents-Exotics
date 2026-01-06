@@ -1,0 +1,58 @@
+<!-- templates/about.html -->
+{% extends "base.html" %}
+
+{% block title %}About – The Agents{% endblock %}
+
+{% block content %}
+<!-- Hero Image Section -->
+<section class="hero-image">
+    <img src="{{ url_for('static', filename='images/placeholder.png') }}" alt="The Agents – About" loading="lazy">
+    <div class="hero-overlay"></div>
+    <div class="container hero-content">
+        <h1>About The Agents</h1>
+        <p>A standard. A lifestyle. Engineered.</p>
+    </div>
+</section>
+
+<section class="about-content">
+    <div class="container">
+        
+        <!-- Philosophy -->
+        <div class="section-block">
+            <h2>Our Philosophy</h2>
+            <p class="lead">At The Agents, we believe true luxury is effortless, invisible, and uncompromising. It is not announced—it is understood. Not requested—it is anticipated.</p>
+            
+            <div class="pillars">
+                <div class="pillar">
+                    <h3>Presence</h3>
+                    <p>We arrive with authority, precision, and quiet excellence—never spectacle.</p>
+                </div>
+                <div class="pillar">
+                    <h3>Protection</h3>
+                    <p>Your safety, privacy, and reputation are non-negotiable. We operate with zero compromise.</p>
+                </div>
+                <div class="pillar">
+                    <h3>Prestige</h3>
+                    <p>Every asset, interaction, and detail reflects the stature of those we serve.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Clients -->
+        <div class="section-block">
+            <h2>Our Clients</h2>
+            <p>We exist for those who operate beyond conventional service: global leaders, visionaries, and individuals whose lives demand discretion and excellence in equal measure.</p>
+            <p>They choose The Agents because they require more than execution—they require certainty.</p>
+        </div>
+
+        <!-- Brand Promise -->
+        <div class="brand-promise-block">
+            <p class="promise">The Agents is not a service.<br>
+            It is a standard.<br>
+            It is a lifestyle.<br>
+            It is control, comfort, and confidence—engineered.</p>
+        </div>
+
+    </div>
+</section>
+{% endblock %}

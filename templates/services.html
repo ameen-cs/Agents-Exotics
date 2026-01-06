@@ -1,0 +1,70 @@
+<!-- templates/services.html -->
+{% extends "base.html" %}
+
+{% block title %}Our Services – The Agents{% endblock %}
+
+{% block content %}
+<!-- Hero Image Section -->
+<section class="hero-image">
+    <img src="{{ url_for('static', filename='images/placeholder.png') }}" alt="The Agents – Our Services" loading="lazy">
+    <div class="hero-overlay"></div>
+    <div class="container hero-content">
+        <h1>Our Services</h1>
+        <p>Curated excellence for those who demand more than service—they require certainty.</p>
+    </div>
+</section>
+
+<section class="services-cards">
+    <div class="container">
+
+        <!-- Service 1: Exotic & Luxury Showroom -->
+        <div class="service-card-row">
+            <div class="service-image">
+                <img src="{{ url_for('static', filename='images/placeholder.png') }}" alt="Exotic Showroom" loading="lazy">
+            </div>
+            <div class="service-content">
+                <h2>Exotic & Luxury Showroom</h2>
+                <p>We source, showcase, and manage a rare collection of exotic, luxury, and high-performance vehicles. Every vehicle represents design, dominance, and distinction.</p>
+                <a href="{{ url_for('inventory') }}" class="cta-button">View Inventory →</a>
+            </div>
+        </div>
+
+        <!-- Service 2: VIP Chauffeur Services -->
+        <div class="service-card-row">
+            <div class="service-image">
+                <img src="{{ url_for('static', filename='images/placeholder.png') }}" alt="VIP Chauffeur" loading="lazy">
+            </div>
+            <div class="service-content">
+                <h2>VIP Chauffeur Services</h2>
+                <p>Our chauffeurs are trained in advanced driving, discretion, and client protocol—ensuring every journey is smooth, secure, and befitting elite standards.</p>
+                <a href="{{ url_for('contact') }}" class="cta-button">Book a Chauffeur →</a>
+            </div>
+        </div>
+
+        <!-- Service 3: Armoured Mobility -->
+        <div class="service-card-row">
+            <div class="service-image">
+                <img src="{{ url_for('static', filename='images/placeholder.png') }}" alt="Armoured Vehicle" loading="lazy">
+            </div>
+            <div class="service-content">
+                <h2>Armoured Mobility & Executive Protection</h2>
+                <p>Armoured vehicles and close-protection solutions built around intelligence, prevention, and controlled precision for maximum safety.</p>
+                <a href="{{ url_for('contact') }}" class="cta-button">Request Protection →</a>
+            </div>
+        </div>
+
+        <!-- Service 4: Elite Lifestyle Management -->
+        <div class="service-card-row">
+            <div class="service-image">
+                <img src="{{ url_for('static', filename='images/placeholder.png') }}" alt="Elite Lifestyle" loading="lazy">
+            </div>
+            <div class="service-content">
+                <h2>Elite Lifestyle Management</h2>
+                <p>From private travel to high-profile events, we act as your single point of command for luxury living.</p>
+                <a href="{{ url_for('contact') }}" class="cta-button">Design Your Experience →</a>
+            </div>
+        </div>
+
+    </div>
+</section>
+{% endblock %}
