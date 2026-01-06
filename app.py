@@ -34,26 +34,33 @@ def inject_now():
 
 class VehicleListingProcessor:
     """Handles processing and formatting of vehicle listings"""
-    
+
+    @staticmethod
+    def is_armoured(description, make="", model=""):
+        """Detect if a vehicle is armoured based on description or known models"""
+        if not description:
+            description = ""
+        description_lower = description.lower()
+        make_model = f"{make} {model}".lower()
+        armoured_keywords = [
+            'armoured', 'armored', 'bulletproof', 'b6', 'b7', 'vr7', 'vr9',
+            'runflat', 'reinforced', 'protection', 'executive protection'
+        ]
+        for keyword in armoured_keywords:
+            if keyword in description_lower or keyword in make_model:
+                return True
+        return False
+
     @staticmethod
     def parse_iso_datetime(dt_str):
-        """
-        Safely parse ISO 8601 datetime string.
-        Returns Unix timestamp for sorting.
-        """
         try:
             if not dt_str:
                 return 0
-            
-            # Handle different datetime formats
             if dt_str.endswith('Z'):
                 dt_str = dt_str[:-1] + '+00:00'
-            
-            # Fix missing colon in timezone offset
             if '+' in dt_str and len(dt_str.split('+')[-1]) == 4:
                 parts = dt_str.split('+')
                 dt_str = f"{parts[0]}+{parts[1][:2]}:{parts[1][2:]}"
-            
             dt = datetime.fromisoformat(dt_str)
             return dt.timestamp()
         except Exception as e:
@@ -62,7 +69,6 @@ class VehicleListingProcessor:
 
     @staticmethod
     def format_price(raw_price_str):
-        """Format price string for display and sorting"""
         price_display = "POA"
         price_value_for_sorting = 0
 
@@ -74,15 +80,12 @@ class VehicleListingProcessor:
             if isinstance(raw_price_str, str):
                 raw_price_str = raw_price_str.strip()
                 parts = raw_price_str.split(',')
-                
                 if len(parts) == 2:
                     major_part_str = parts[0]
                     minor_part_str = parts[1][:2]
                     major_digits_only = ''.join(filter(str.isdigit, major_part_str))
-                    
                     if not major_digits_only:
                         major_digits_only = "0"
-                    
                     price_float_str = f"{major_digits_only}.{minor_part_str}"
                     price_value_for_sorting = float(price_float_str)
                     major_int = int(major_digits_only)
@@ -96,15 +99,12 @@ class VehicleListingProcessor:
             elif isinstance(raw_price_str, (int, float)):
                 price_value_for_sorting = float(raw_price_str)
                 price_display = f"R{price_value_for_sorting:,.0f}".replace(',', ' ')
-                
         except (ValueError, IndexError, TypeError) as e:
             logger.warning(f"Error parsing price '{raw_price_str}': {e}")
-
         return price_display, price_value_for_sorting
 
     @staticmethod
     def format_mileage(mileage):
-        """Format mileage with spaces as thousand separators"""
         try:
             mileage_int = int(mileage) if mileage else 0
             return f"{mileage_int:,}".replace(',', ' ')
@@ -113,7 +113,6 @@ class VehicleListingProcessor:
 
     @staticmethod
     def process_listing(item):
-        """Process a single listing item"""
         make = item.get("make", "Unknown").title()
         model = item.get("model", "Model").title()
         year = item.get("year", "N/A")
@@ -124,20 +123,16 @@ class VehicleListingProcessor:
         body_type = item.get("bodyType", "")
         engine = item.get("engine", "N/A")
 
-        # Price handling
         price_display, price_value_for_sorting = VehicleListingProcessor.format_price(item.get("price", ""))
-
-        # Mileage handling
         formatted_mileage = VehicleListingProcessor.format_mileage(item.get("mileageInKm", 0))
-
-        # Images
         image_urls = item.get("imageUrls", [])
         if not image_urls:
             image_urls = [f"https://source.unsplash.com/random/800x600/?car,{make.lower()}+{model.lower()}"]
-
-        # Created timestamp
         created = item.get("created", "")
         created_timestamp = VehicleListingProcessor.parse_iso_datetime(created) if created else time.time()
+
+        # Detect armoured status
+        is_armoured = VehicleListingProcessor.is_armoured(description, make, model)
 
         return {
             "id": item.get("id"),
@@ -155,16 +150,14 @@ class VehicleListingProcessor:
             "description": description,
             "created": created,
             "created_timestamp": created_timestamp,
-            "engine": engine
+            "engine": engine,
+            "is_armoured": is_armoured  # ✅ Added
         }
 
 
 class CacheManager:
-    """Handles caching of API data"""
-    
     @staticmethod
     def get_listings_from_cache():
-        """Read cached data if it exists and is still fresh"""
         if os.path.exists(CACHE_FILE):
             try:
                 with open(CACHE_FILE, "r", encoding="utf-8") as f:
@@ -180,7 +173,6 @@ class CacheManager:
 
     @staticmethod
     def save_listings_to_cache(data):
-        """Save API response to cache with timestamp"""
         try:
             cache = {
                 "timestamp": time.time(),
@@ -196,67 +188,60 @@ class CacheManager:
 class APIClient:
     """Handles API communication"""
     
-@staticmethod
-def fetch_listings_from_api():
-    logger.info("📡 Fetching fresh data from API...")
-    try:
-        response = requests.get(
-            API_URL,
-            auth=(USERNAME, PASSWORD),
-            timeout=10,
-            headers={"Accept": "application/json"}
-        )
+    @staticmethod  # ✅ Properly indented inside class
+    def fetch_listings_from_api():
+        logger.info("📡 Fetching fresh data from API...")
+        try:
+            response = requests.get(
+                API_URL,
+                auth=(USERNAME, PASSWORD),
+                timeout=10,
+                headers={"Accept": "application/json"}
+            )
 
-        logger.info(f"API Response Status: {response.status_code}")
-        
-        # Log first 300 chars if not 200
-        if response.status_code != 200:
-            logger.error(f"API Error Body: {response.text[:300]}")
+            logger.info(f"API Response Status: {response.status_code}")
+            
+            if response.status_code != 200:
+                logger.error(f"API Error Body: {response.text[:300]}")
+                return None
+
+            raw_data = response.json()
+            if isinstance(raw_data, list):
+                return raw_data
+            elif isinstance(raw_data, dict):
+                return raw_data.get("listings", []) or raw_data.get("vehicles", []) or []
+            else:
+                return []
+                
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Network error: {e}")
             return None
-
-        raw_data = response.json()
-        # ... rest of your parsing logic ...
-
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Network error: {e}")
-        return None
-    except ValueError as e:  # JSON decode error
-        logger.error(f"Invalid JSON from API: {e}")
-        return None
-    except Exception as e:
-        logger.error(f"Unexpected error: {e}")
-        return None
+        except ValueError as e:
+            logger.error(f"Invalid JSON from API: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"Unexpected error: {e}")
+            return None
 
 
 def fetch_listings():
-    """Fetch vehicle listings from API or cache, then sort by 'created' (newest first)"""
-    
-    # Try to get from cache first
     cached_data = CacheManager.get_listings_from_cache()
     
     if cached_data is not None:
         raw_listings = cached_data
     else:
-        # Cache miss — fetch from API
         raw_listings = APIClient.fetch_listings_from_api()
-        
         if raw_listings is not None:
-            # Save to cache
             CacheManager.save_listings_to_cache(raw_listings)
         elif cached_data is not None:
-            # Fallback to stale cache
             logger.warning("⚠️ Using stale cache due to API failure")
             raw_listings = cached_data
         else:
             logger.error("❌ No cache available. Showing empty list.")
             raw_listings = []
 
-    # Process each listing
     listings = [VehicleListingProcessor.process_listing(item) for item in raw_listings]
-    
-    # Sort by 'created_timestamp' — newest first
     listings.sort(key=lambda x: x["created_timestamp"], reverse=True)
-    
     logger.info(f"📦 Total processed & sorted listings: {len(listings)}")
     return listings
 
@@ -265,7 +250,6 @@ def fetch_listings():
 
 @app.route("/")
 def home():
-    """Home page — shows top 3 most expensive vehicles + brand intro"""
     try:
         listings = fetch_listings()
         sorted_by_price = sorted(listings, key=lambda x: x.get("price", 0), reverse=True)
@@ -278,45 +262,35 @@ def home():
 
 @app.route("/services")
 def services():
-    """Services page — Exotics, Chauffeur, Protection, Lifestyle"""
     return render_template("services.html")
 
 
 @app.route("/about")
 def about():
-    """About page — Philosophy, pillars, clients, brand promise"""
     return render_template("about.html")
 
 
 @app.route("/contact")
 def contact():
-    """Contact page — Form + confidential info"""
     return render_template("contact.html")
 
-
-# ——— EXISTING VEHICLE ROUTES ———
 
 @app.route("/inventory")
 def inventory():
     try:
         listings = fetch_listings()
-        
-        # Get filters from URL
-        sort = request.args.get('sort', 'newest')  # default: newest
-        armoured = request.args.get('armoured', 'all')  # 'all', 'yes', 'no'
+        sort = request.args.get('sort', 'newest')
+        armoured = request.args.get('armoured', 'all')
 
-        # Filter by armoured status
         if armoured == 'yes':
             listings = [car for car in listings if car.get('is_armoured')]
         elif armoured == 'no':
             listings = [car for car in listings if not car.get('is_armoured')]
 
-        # Sort
         if sort == 'price_high':
             listings.sort(key=lambda x: x.get('price', 0), reverse=True)
         elif sort == 'price_low':
             listings.sort(key=lambda x: x.get('price', 0))
-        # else: 'newest' — already sorted by created_timestamp in fetch_listings()
 
         return render_template("index.html", listings=listings, sort=sort, armoured=armoured)
     except Exception as e:
@@ -324,32 +298,21 @@ def inventory():
         return render_template("index.html", listings=[], sort='newest', armoured='all')
 
 
-@app.route("/listing/<listing_id>")  # ← Remove "int:" — now accepts any string
+@app.route("/listing/<listing_id>")
 def listing_detail(listing_id):
     try:
-        # First check current listings
         listings = fetch_listings()
         for listing in listings:
-            # Compare as strings to be safe
             if str(listing.get("id")) == str(listing_id):
                 return render_template("listing.html", car=listing)
-        
-        # Fallback: fetch directly from API
-        raw_listings = APIClient.fetch_listings_from_api()
-        if raw_listings:
-            for item in raw_listings:
-                if str(item.get("id")) == str(listing_id):
-                    processed_listing = VehicleListingProcessor.process_listing(item)
-                    return render_template("listing.html", car=processed_listing)
-                    
+        # If not found, return 404 (no secondary API call needed)
+        return "Vehicle not found", 404
     except Exception as e:
-        logger.error(f"🚨 Error fetching listing {listing_id}: {e}")
-    
-    return "Vehicle not found", 404
+        logger.error(f"Error fetching listing {listing_id}: {e}")
+        return "Vehicle not found", 404
 
 
-# ——— LEGACY REDIRECTS (optional but clean) ———
-
+# Legacy redirects
 @app.route("/about.html")
 def about_legacy():
     return render_template("about.html")
@@ -376,14 +339,10 @@ def privacy_policy():
     return render_template("privacy-policy.html")
 
 
-# ——— HEALTH CHECK ———
-
 @app.route("/health")
 def health_check():
     return jsonify({"status": "healthy", "timestamp": datetime.now().isoformat()})
 
-
-# ——— RUN ———
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
