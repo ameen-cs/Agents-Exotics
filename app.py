@@ -196,38 +196,36 @@ class CacheManager:
 class APIClient:
     """Handles API communication"""
     
-    @staticmethod
-    def fetch_listings_from_api():
-        """Fetch vehicle listings from API"""
-        logger.info("📡 Fetching fresh data from API...")
-        try:
-            response = requests.get(
-                API_URL,
-                auth=(USERNAME, PASSWORD),
-                timeout=10,
-                headers={
-                    "Accept": "application/json",
-                    "User-Agent": "AutoTrader-Client-App/1.0"
-                }
-            )
+@staticmethod
+def fetch_listings_from_api():
+    logger.info("📡 Fetching fresh data from API...")
+    try:
+        response = requests.get(
+            API_URL,
+            auth=(USERNAME, PASSWORD),
+            timeout=10,
+            headers={"Accept": "application/json"}
+        )
 
-            if response.status_code == 200:
-                raw_data = response.json()
-                
-                # Normalize response structure
-                if isinstance(raw_data, list):
-                    return raw_data
-                elif isinstance(raw_data, dict):
-                    return raw_data.get("listings", []) or raw_data.get("vehicles", []) or []
-                else:
-                    return []
-            else:
-                logger.error(f"❌ API Error {response.status_code}: {response.text}")
-                return None
-                
-        except Exception as e:
-            logger.error(f"🚨 Request failed: {e}")
+        logger.info(f"API Response Status: {response.status_code}")
+        
+        # Log first 300 chars if not 200
+        if response.status_code != 200:
+            logger.error(f"API Error Body: {response.text[:300]}")
             return None
+
+        raw_data = response.json()
+        # ... rest of your parsing logic ...
+
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Network error: {e}")
+        return None
+    except ValueError as e:  # JSON decode error
+        logger.error(f"Invalid JSON from API: {e}")
+        return None
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}")
+        return None
 
 
 def fetch_listings():
